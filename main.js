@@ -18,6 +18,7 @@ let player = {
   rotation: 0,
   firing: false,
   fireCooldown: 0,
+  dead: false,
 };
 
 // Asteroids
@@ -70,7 +71,7 @@ function gameLoop() {
   player.x += player.vx;
   player.y += player.vy;
 
-  if (player.firing && player.fireCooldown == 0) {
+  if (player.dead == false && player.firing && player.fireCooldown == 0) {
     for (let i = 0; i < bulletCount; i++) {
         let nextBullet = bullets[i];
         if (nextBullet.ready) {
@@ -176,6 +177,27 @@ function gameLoop() {
     return a.dead == false;
   });
 
+  if (player.dead == false) {
+    for (let i = 0; i < asteroids.length; i++) {
+      a = asteroids[i];
+      dx = player.x - a.x;
+      dy = player.y - a.y;
+      if (dx * dx + dy * dy < a.radius * a.radius) {
+        player.dead = true;
+        a.sound.play();
+        for (let i = 0; i < 20; i++) {
+          particles.push({
+            x: player.x,
+            y: player.y,
+            angle: Math.random() * Math.PI * 2,
+            speed: Math.random() * 5,
+            life: 50,
+          });
+        }
+      }
+    }
+  }
+
   for (let i = 0; i < particles.length; i++) {
     p = particles[i];
     p.x += p.speed * Math.cos(p.angle);
@@ -187,14 +209,16 @@ function gameLoop() {
     return p.life > 0;
   });
 
-  // Draw player
   drawPlayer();
 
   requestAnimationFrame(gameLoop);
 }
 
-// Draw player function
 function drawPlayer() {
+  if (player.dead) {
+    return;
+  }
+
   ctx.save();
   ctx.translate(player.x, player.y);
   ctx.rotate(player.angle);
