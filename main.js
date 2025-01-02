@@ -30,12 +30,16 @@ for (let i = 0; i < asteroidCount; i++) {
     radius: Math.random() * 20 + 10,
     angle: Math.random() * Math.PI * 2,
     speed: Math.random() * 2 + 1,
+    numPoints: Math.floor(Math.random() * 3) + 5,
     sound: new Audio('explosion.wav'),
+    dead: false,
   });
 }
 
+let particles = [];
+
 let bullets = [];
-const bulletCount = 6;
+const bulletCount = 5;
 const buletLength = 3;
 for (let i = 0; i < bulletCount; i++) {
     bullets.push({
@@ -127,13 +131,61 @@ function gameLoop() {
             let dx = bullet.x - asteroid.x;
             let dy = bullet.y - asteroid.y;
             let r = Math.sqrt(dx * dx + dy * dy);
-            if (r <= asteroid.radius) {
+            if (r <= asteroid.radius && asteroid.dead == false) {
+                bullet.ready = true;
                 asteroid.dead = true;
                 asteroid.sound.play();
+
+                for (let i = 0; i < 20; i++) {
+                  particles.push({
+                    x: asteroid.x,
+                    y: asteroid.y,
+                    angle: Math.random() * Math.PI * 2,
+                    speed: Math.random() * 5,
+                    life: 50,
+                  });
+                }
+
+                if (asteroid.radius > 10) {
+                  asteroids.push({
+                    x: asteroid.x,
+                    y: asteroid.y,
+                    radius: 10,
+                    angle: asteroid.angle - Math.random() * Math.PI / 2.0,
+                    speed: asteroid.speed,
+                    numPoints: Math.floor(Math.random() * 3) + 5,
+                    sound: asteroid.sound,
+                    dead: false,
+                  });
+                  asteroids.push({
+                    x: asteroid.x,
+                    y: asteroid.y,
+                    radius: 10,
+                    angle: asteroid.angle + Math.random() * Math.PI / 2.0,
+                    speed: asteroid.speed,
+                    numPoints: Math.floor(Math.random() * 3) + 5,
+                    sound: asteroid.sound,
+                    dead: false,
+                  });
+                }
             }
         }
     }    
   }
+  asteroids = asteroids.filter(function(a) {
+    return a.dead == false;
+  });
+
+  for (let i = 0; i < particles.length; i++) {
+    p = particles[i];
+    p.x += p.speed * Math.cos(p.angle);
+    p.y += p.speed * Math.sin(p.angle);
+    p.life--;
+  }
+  drawParticles();
+  particles = particles.filter(function(p) {
+    return p.life > 0;
+  });
 
   // Draw player
   drawPlayer();
@@ -175,12 +227,11 @@ function drawAsteroid(asteroid) {
     }
   ctx.fillStyle = 'gray';
   ctx.beginPath();
-  const numPoints = Math.floor(Math.random() * 10) + 5;
-  const angleStep = Math.PI * 2 / numPoints;
+  const angleStep = Math.PI * 2 / asteroid.numPoints;
   let angle = 0;
   ctx.moveTo(asteroid.x + asteroid.radius * Math.cos(angle), 
              asteroid.y + asteroid.radius * Math.sin(angle));
-  for (let i = 1; i <= numPoints; i++) {
+  for (let i = 1; i <= asteroid.numPoints; i++) {
     angle += angleStep;
     ctx.lineTo(asteroid.x + asteroid.radius * Math.cos(angle), 
                asteroid.y + asteroid.radius * Math.sin(angle));
@@ -189,8 +240,18 @@ function drawAsteroid(asteroid) {
   ctx.fill();
 }
 
+function drawParticles() {
+  for (let i = 0; i < particles.length; i++) {
+    p = particles[i];
+    ctx.fillRect(p.x - 1, p.y - 1, 2, 2);
+  }
+}
+
 // Draw bulet function
 function drawBullet(bullet) {
+    if (bullet.ready) {
+      return;
+    }
     ctx.strokeStyle = 'green';
     ctx.beginPath();
     ctx.moveTo(bullet.x, bullet.y);
