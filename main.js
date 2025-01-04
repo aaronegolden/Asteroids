@@ -1,4 +1,5 @@
 const canvas = document.getElementById('gameCanvas');
+const hud = document.getElementById('hud');
 const ctx = canvas.getContext('2d');
 
 const LASER_SOUND = new Audio('laser.wav');
@@ -6,11 +7,19 @@ const EXPLOSION_SOUND = new Audio('explosion.wav');
 
 const PARTICLES_PER_EXPLOSION = 20;
 
-const MAX_BULLETS = 5;
+const MAX_BULLETS = 100;
 const BULLET_LENGTH = 3;
-const FIRE_COOLDOWN = 10;
+const FIRE_COOLDOWN = 1;
 
 const MAX_ASTEROIDS = 10;
+const ASTEROID_SCORE = 10;
+const SMALL_BONUS = 5;
+
+const PLAYER_SPAWN_COOLDOWN = 200;
+
+let score = 0;
+let life_bonus = 0;
+let player_spawn_cooldown = 0;
 
 canvas.width = window.innerWidth;
 canvas.height = window.innerHeight;
@@ -142,6 +151,13 @@ function gameLoop() {
                 asteroid.dead = true;
                 PlaySound(EXPLOSION_SOUND);
 
+                smallBonus = 0;
+                if (asteroid.radius <= 10) {
+                  smallBonus = SMALL_BONUS;
+                }
+                AddLifeBonus(1);
+                AddScore(ASTEROID_SCORE + smallBonus + life_bonus);
+
                 for (let i = 0; i < PARTICLES_PER_EXPLOSION; i++) {
                   particles.push({
                     x: asteroid.x,
@@ -180,6 +196,25 @@ function gameLoop() {
     return a.dead == false;
   });
 
+  if (player.dead == true && player_spawn_cooldown > 0) {
+    player_spawn_cooldown--;
+    if (player_spawn_cooldown == 0) {
+      player = {
+        x: canvas.width / 2,
+        y: canvas.height / 2,
+        radius: 10,
+        angle: 0,
+        vx: 0,
+        vy: 0,
+        acceleration: 0,
+        rotation: 0,
+        firing: false,
+        fireCooldown: 0,
+        dead: false,    
+      }
+    }
+  }
+
   if (player.dead == false) {
     for (let i = 0; i < asteroids.length; i++) {
       a = asteroids[i];
@@ -187,6 +222,8 @@ function gameLoop() {
       dy = player.y - a.y;
       if (dx * dx + dy * dy < a.radius * a.radius) {
         player.dead = true;
+        SetLifeBonus(0);
+        player_spawn_cooldown = PLAYER_SPAWN_COOLDOWN;
         PlaySound(EXPLOSION_SOUND);
         for (let i = 0; i < 20; i++) {
           particles.push({
@@ -292,6 +329,24 @@ function drawBullet(bullet) {
     sound.play();
   }
   
+  function AddScore(s) {
+    score += s;
+    UpdateHUD();
+  }
+
+  function AddLifeBonus(b) {
+    life_bonus += b;
+    UpdateHUD();
+  }
+
+  function SetLifeBonus(b) {
+    life_bonus = b;
+    UpdateHUD();
+  }
+
+function UpdateHUD() {
+  hud.innerText = `SCORE: ${score}\nBONUS: ${life_bonus}`;
+}
 
 window.addEventListener('keydown', (event) => {
     if (event.key === 'ArrowLeft') {
@@ -315,4 +370,5 @@ window.addEventListener('keyup', (event) => {
     }
   });
 
+UpdateHUD();
 requestAnimationFrame(gameLoop);

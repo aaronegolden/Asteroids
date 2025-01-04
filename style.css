@@ -3,6 +3,12 @@ body {
     margin: 0;
     overflow: hidden;
 }
+
+.hud{
+    color: white;
+    font-family: monospace;
+}
+
 canvas {
     display: block;
 }
