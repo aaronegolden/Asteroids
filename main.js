@@ -326,9 +326,10 @@ function drawAsteroid(asteroid) {
 }
 
 function drawParticles() {
+  ctx.fillStyle = 'white';
   for (let i = 0; i < particles.length; i++) {
     p = particles[i];
-    ctx.fillRect(p.x - 1, p.y - 1, 2, 2);
+    ctx.fillRect(p.x - 0.5, p.y - 0.5, 1, 1);
   }
 }
 
