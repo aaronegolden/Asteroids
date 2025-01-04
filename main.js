@@ -7,19 +7,24 @@ const EXPLOSION_SOUND = new Audio('explosion.wav');
 
 const PARTICLES_PER_EXPLOSION = 20;
 
-const MAX_BULLETS = 100;
+const MAX_BULLETS = 10;
 const BULLET_LENGTH = 3;
-const FIRE_COOLDOWN = 1;
+const FIRE_COOLDOWN = 10;
 
 const MAX_ASTEROIDS = 10;
 const ASTEROID_SCORE = 10;
 const SMALL_BONUS = 5;
 
 const PLAYER_SPAWN_COOLDOWN = 200;
+const PLAYER_INVULNERABLE_COOLDOWN = 50;
+const PLAYER_INVULNERABLE_BLINK_COOLDOWN = 2;
 
 let score = 0;
 let life_bonus = 0;
 let player_spawn_cooldown = 0;
+let player_invulnerable_cooldown = 0;
+let player_invulnerable_blink = false;
+let player_invulnerable_blink_cooldown = 0;
 
 canvas.width = window.innerWidth;
 canvas.height = window.innerHeight;
@@ -199,6 +204,9 @@ function gameLoop() {
   if (player.dead == true && player_spawn_cooldown > 0) {
     player_spawn_cooldown--;
     if (player_spawn_cooldown == 0) {
+      player_invulnerable_cooldown = PLAYER_INVULNERABLE_COOLDOWN;
+      player_invulnerable_blink_cooldown = PLAYER_INVULNERABLE_BLINK_COOLDOWN;
+      player_invulnerable_blink = true;
       player = {
         x: canvas.width / 2,
         y: canvas.height / 2,
@@ -215,7 +223,18 @@ function gameLoop() {
     }
   }
 
-  if (player.dead == false) {
+  if (player_invulnerable_cooldown > 0) {
+    player_invulnerable_cooldown--;
+  }
+  if (player_invulnerable_blink_cooldown > 0) {
+    player_invulnerable_blink_cooldown--;
+    if (player_invulnerable_blink_cooldown == 0) {
+      player_invulnerable_blink = !player_invulnerable_blink;
+      player_invulnerable_blink_cooldown = PLAYER_INVULNERABLE_BLINK_COOLDOWN;
+    }
+  }
+
+  if (player.dead == false && player_invulnerable_cooldown == 0) {
     for (let i = 0; i < asteroids.length; i++) {
       a = asteroids[i];
       dx = player.x - a.x;
@@ -249,7 +268,9 @@ function gameLoop() {
     return p.life > 0;
   });
 
-  drawPlayer();
+  if (player_invulnerable_cooldown == 0 || player_invulnerable_blink) {
+    drawPlayer();
+  }
 
   requestAnimationFrame(gameLoop);
 }
