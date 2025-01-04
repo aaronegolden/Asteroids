@@ -1,7 +1,16 @@
 const canvas = document.getElementById('gameCanvas');
 const ctx = canvas.getContext('2d');
 
-const laserSound = new Audio('laser.wav');
+const LASER_SOUND = new Audio('laser.wav');
+const EXPLOSION_SOUND = new Audio('explosion.wav');
+
+const PARTICLES_PER_EXPLOSION = 20;
+
+const MAX_BULLETS = 5;
+const BULLET_LENGTH = 3;
+const FIRE_COOLDOWN = 10;
+
+const MAX_ASTEROIDS = 10;
 
 canvas.width = window.innerWidth;
 canvas.height = window.innerHeight;
@@ -23,7 +32,7 @@ let player = {
 
 // Asteroids
 let asteroids = [];
-const asteroidCount = 10;
+const asteroidCount = MAX_ASTEROIDS;
 for (let i = 0; i < asteroidCount; i++) {
   asteroids.push({
     x: Math.random() * canvas.width,
@@ -32,7 +41,6 @@ for (let i = 0; i < asteroidCount; i++) {
     angle: Math.random() * Math.PI * 2,
     speed: Math.random() * 2 + 1,
     numPoints: Math.floor(Math.random() * 3) + 5,
-    sound: new Audio('explosion.wav'),
     dead: false,
   });
 }
@@ -40,16 +48,13 @@ for (let i = 0; i < asteroidCount; i++) {
 let particles = [];
 
 let bullets = [];
-const bulletCount = 5;
-const buletLength = 3;
-for (let i = 0; i < bulletCount; i++) {
+for (let i = 0; i < MAX_BULLETS; i++) {
     bullets.push({
         x: -100,
         y: -100,
         vx: 0,
         vy: 0,
         ready: true,
-        sound: new Audio('laser.wav'),
     });
 }
 
@@ -72,7 +77,7 @@ function gameLoop() {
   player.y += player.vy;
 
   if (player.dead == false && player.firing && player.fireCooldown == 0) {
-    for (let i = 0; i < bulletCount; i++) {
+    for (let i = 0; i < MAX_BULLETS; i++) {
         let nextBullet = bullets[i];
         if (nextBullet.ready) {
             nextBullet.x = player.x;
@@ -80,8 +85,8 @@ function gameLoop() {
             nextBullet.vx = -Math.sin(player.angle) * 10;
             nextBullet.vy = Math.cos(player.angle) * 10;
             nextBullet.ready = false;
-            nextBullet.sound.play();
-            player.fireCooldown = 10;
+            PlaySound(LASER_SOUND);
+            player.fireCooldown = FIRE_COOLDOWN;
             break;
         }
     }
@@ -135,9 +140,9 @@ function gameLoop() {
             if (r <= asteroid.radius && asteroid.dead == false) {
                 bullet.ready = true;
                 asteroid.dead = true;
-                asteroid.sound.play();
+                PlaySound(EXPLOSION_SOUND);
 
-                for (let i = 0; i < 20; i++) {
+                for (let i = 0; i < PARTICLES_PER_EXPLOSION; i++) {
                   particles.push({
                     x: asteroid.x,
                     y: asteroid.y,
@@ -155,7 +160,6 @@ function gameLoop() {
                     angle: asteroid.angle - Math.random() * Math.PI / 2.0,
                     speed: asteroid.speed,
                     numPoints: Math.floor(Math.random() * 3) + 5,
-                    sound: asteroid.sound,
                     dead: false,
                   });
                   asteroids.push({
@@ -165,7 +169,6 @@ function gameLoop() {
                     angle: asteroid.angle + Math.random() * Math.PI / 2.0,
                     speed: asteroid.speed,
                     numPoints: Math.floor(Math.random() * 3) + 5,
-                    sound: asteroid.sound,
                     dead: false,
                   });
                 }
@@ -184,7 +187,7 @@ function gameLoop() {
       dy = player.y - a.y;
       if (dx * dx + dy * dy < a.radius * a.radius) {
         player.dead = true;
-        a.sound.play();
+        PlaySound(EXPLOSION_SOUND);
         for (let i = 0; i < 20; i++) {
           particles.push({
             x: player.x,
@@ -279,11 +282,15 @@ function drawBullet(bullet) {
     ctx.strokeStyle = 'green';
     ctx.beginPath();
     ctx.moveTo(bullet.x, bullet.y);
-    ctx.lineTo(bullet.x + bullet.vx * buletLength, bullet.y + bullet.vy * buletLength);
+    ctx.lineTo(bullet.x + bullet.vx * BULLET_LENGTH, bullet.y + bullet.vy * BULLET_LENGTH);
     ctx.closePath();
     ctx.stroke();
   }
   
+  function PlaySound(sound) {
+    sound.currentTime = 0;
+    sound.play();
+  }
   
 
 window.addEventListener('keydown', (event) => {
